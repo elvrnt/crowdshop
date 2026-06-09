@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактировать профиль{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <h1><i class="bi bi-pencil me-2"></i>Редактировать профиль</h1>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card p-4">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.first_name.label }}</label>
+              {{ form.first_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.last_name.label }}</label>
+              {{ form.last_name }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.email.label }}</label>
+            {{ form.email }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.phone.label }}</label>
+            {{ form.phone }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.bio.label }}</label>
+            <textarea name="bio" class="form-control" rows="4" placeholder="Расскажите о себе...">{{ form.bio.value|default:'' }}</textarea>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">{{ form.avatar.label }}</label>
+            {% if user.avatar %}
+            <div class="mb-2">
+              <img src="{{ user.avatar.url }}" class="rounded-circle" width="60" height="60" style="object-fit:cover;" alt="Текущий аватар">
+              <small class="text-muted ms-2">Текущий аватар</small>
+            </div>
+            {% endif %}
+            {{ form.avatar }}
+          </div>
+
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary fw-bold px-4">
+              <i class="bi bi-check-circle me-1"></i>Сохранить
+            </button>
+            <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary">Отмена</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

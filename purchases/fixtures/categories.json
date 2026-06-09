@@ -1,0 +1,10 @@
+[
+  {"model": "purchases.category", "pk": 1, "fields": {"name": "Одежда и обувь", "slug": "clothing", "icon": "bi-bag", "description": "Одежда, обувь, аксессуары"}},
+  {"model": "purchases.category", "pk": 2, "fields": {"name": "Электроника", "slug": "electronics", "icon": "bi-phone", "description": "Гаджеты, техника, электроника"}},
+  {"model": "purchases.category", "pk": 3, "fields": {"name": "Детские товары", "slug": "kids", "icon": "bi-balloon", "description": "Товары для детей"}},
+  {"model": "purchases.category", "pk": 4, "fields": {"name": "Дом и сад", "slug": "home", "icon": "bi-house", "description": "Товары для дома и сада"}},
+  {"model": "purchases.category", "pk": 5, "fields": {"name": "Красота и здоровье", "slug": "beauty", "icon": "bi-heart-pulse", "description": "Косметика, уход, здоровье"}},
+  {"model": "purchases.category", "pk": 6, "fields": {"name": "Спорт и туризм", "slug": "sport", "icon": "bi-bicycle", "description": "Спортивные товары и снаряжение"}},
+  {"model": "purchases.category", "pk": 7, "fields": {"name": "Продукты питания", "slug": "food", "icon": "bi-cart", "description": "Продукты, напитки, сладости"}},
+  {"model": "purchases.category", "pk": 8, "fields": {"name": "Книги и канцелярия", "slug": "books", "icon": "bi-book", "description": "Книги, учебники, канцтовары"}}
+]

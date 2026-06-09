@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ purchase.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'purchases:list' %}">Закупки</a></li>
+      <li class="breadcrumb-item active text-truncate" style="max-width:200px;">{{ purchase.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <!-- Main info -->
+    <div class="col-lg-8">
+      <div class="card">
+        {% if purchase.image %}
+        <img src="{{ purchase.image.url }}" class="card-img-top" style="height:320px; object-fit:cover;" alt="{{ purchase.title }}">
+        {% else %}
+        <div class="purchase-img-placeholder" style="height:220px; font-size:5rem;">
+          <i class="bi {% if purchase.category %}{{ purchase.category.icon }}{% else %}bi-bag{% endif %}"></i>
+        </div>
+        {% endif %}
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <span class="status-pill bg-{{ purchase.status_color }}-subtle text-{{ purchase.status_color }} fs-6">
+              {{ purchase.status_label }}
+            </span>
+            {% if purchase.category %}
+            <span class="badge bg-light text-dark fs-6">
+              <i class="bi {{ purchase.category.icon }} me-1"></i>{{ purchase.category.name }}
+            </span>
+            {% endif %}
+            {% if purchase.is_open %}
+            <span class="badge bg-success-subtle text-success fs-6">
+              <i class="bi bi-clock me-1"></i>Осталось {{ purchase.days_left }} дн.
+            </span>
+            {% endif %}
+          </div>
+
+          <h1 class="brand-font mb-3" style="font-size:1.6rem;">{{ purchase.title }}</h1>
+          <p class="text-muted" style="white-space:pre-wrap;">{{ purchase.description }}</p>
+
+          {% if purchase.source_url %}
+          <a href="{{ purchase.source_url }}" target="_blank" class="btn btn-outline-secondary btn-sm mt-1">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Смотреть товар у поставщика
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="card mt-4" id="comments">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-4"><i class="bi bi-chat-dots me-2"></i>Обсуждение ({{ comments|length }})</h5>
+
+          {% for comment in comments %}
+          <div class="d-flex gap-3 mb-4">
+            <div class="avatar-sm flex-shrink-0">
+              {{ comment.author.first_name|first|upper }}{{ comment.author.last_name|first|upper }}
+            </div>
+            <div>
+              <div class="fw-bold" style="font-size:0.9rem;">
+                {{ comment.author.get_full_name|default:comment.author.username }}
+                <small class="text-muted fw-normal ms-2">{{ comment.created_at|date:"d.m.Y H:i" }}</small>
+              </div>
+              <p class="mb-0 mt-1" style="font-size:0.95rem;">{{ comment.text }}</p>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-muted">Пока нет комментариев. Будьте первым!</p>
+          {% endfor %}
+
+          {% if user.is_authenticated %}
+          <div class="separator"></div>
+          <form method="post" action="{% url 'purchases:comment' purchase.pk %}">
+            {% csrf_token %}
+            <div class="d-flex gap-3">
+              <div class="avatar-sm flex-shrink-0">
+                {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+              </div>
+              <div class="flex-grow-1">
+                {{ comment_form.text }}
+                <button type="submit" class="btn btn-primary btn-sm mt-2">
+                  <i class="bi bi-send me-1"></i>Отправить
+                </button>
+              </div>
+            </div>
+          </form>
+          {% else %}
+          <a href="{% url 'users:login' %}?next={{ request.path }}" class="btn btn-outline-primary btn-sm">
+            Войдите, чтобы написать комментарий
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Price & Order -->
+      <div class="card mb-4 sticky-top" style="top:80px;">
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Цена за единицу</div>
+            <div class="brand-font fw-bold" style="font-size:1.9rem; color:var(--cs-primary);">
+              {{ purchase.price_with_fee|floatformat:0 }} ₽
+            </div>
+            <small class="text-muted">
+              Базовая: {{ purchase.price_per_unit }} ₽ + {{ purchase.organizer_fee }}% комиссия орг.
+            </small>
+          </div>
+
+          <div class="separator"></div>
+
+          <dl class="row mb-3" style="font-size:0.88rem;">
+            <dt class="col-6 text-muted fw-normal">Участников</dt>
+            <dd class="col-6 text-end fw-bold">{{ purchase.participants_count }}
+              {% if purchase.min_participants > 1 %}/ мин. {{ purchase.min_participants }}{% endif %}
+            </dd>
+            <dt class="col-6 text-muted fw-normal">Заказано единиц</dt>
+            <dd class="col-6 text-end fw-bold">{{ purchase.total_units }}</dd>
+            {% if purchase.stop_date %}
+            <dt class="col-6 text-muted fw-normal">Сбор до</dt>
+            <dd class="col-6 text-end fw-bold">{{ purchase.stop_date|date:"d.m.Y" }}</dd>
+            {% endif %}
+            {% if purchase.delivery_date %}
+            <dt class="col-6 text-muted fw-normal">Доставка</dt>
+            <dd class="col-6 text-end fw-bold">{{ purchase.delivery_date|date:"d.m.Y" }}</dd>
+            {% endif %}
+            {% if purchase.delivery_address %}
+            <dt class="col-6 text-muted fw-normal">Выдача</dt>
+            <dd class="col-6 text-end fw-bold" style="font-size:0.8rem;">{{ purchase.delivery_address }}</dd>
+            {% endif %}
+          </dl>
+
+          {% if user.is_authenticated %}
+            {% if user == purchase.organizer %}
+            <div class="alert alert-info p-2 text-center small mb-3">
+              <i class="bi bi-person-badge me-1"></i>Вы организатор этой закупки
+            </div>
+            <a href="{% url 'purchases:manage' purchase.pk %}" class="btn btn-primary w-100 mb-2">
+              <i class="bi bi-gear me-1"></i>Управление закупкой
+            </a>
+            <a href="{% url 'purchases:edit' purchase.pk %}" class="btn btn-outline-secondary w-100 btn-sm">
+              <i class="bi bi-pencil me-1"></i>Редактировать
+            </a>
+            {% elif user_order %}
+            <div class="alert alert-success p-3 mb-3">
+              <div class="fw-bold mb-1"><i class="bi bi-check-circle me-1"></i>Вы участвуете</div>
+              <div class="small">Количество: {{ user_order.quantity }} шт.</div>
+              <div class="small">Статус: <span class="badge bg-{{ user_order.status_color }}">{{ user_order.status_label }}</span></div>
+              <div class="small">Сумма: <strong>{{ user_order.total_price|floatformat:0 }} ₽</strong></div>
+            </div>
+            {% if user_order.status in 'pending,confirmed' %}
+            <form method="post" action="{% url 'purchases:order_cancel' user_order.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-outline-danger btn-sm w-100"
+                onclick="return confirm('Отменить заявку?')">
+                <i class="bi bi-x-circle me-1"></i>Отменить заявку
+              </button>
+            </form>
+            {% endif %}
+            {% elif purchase.is_open %}
+            <form method="post" action="{% url 'purchases:order' purchase.pk %}">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Количество единиц</label>
+                {{ order_form.quantity }}
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Комментарий (размер, цвет и т.д.)</label>
+                {{ order_form.comment }}
+              </div>
+              <button type="submit" class="btn btn-success w-100 fw-bold">
+                <i class="bi bi-bag-plus me-1"></i>Участвовать в закупке
+              </button>
+            </form>
+            {% else %}
+            <div class="alert alert-secondary text-center small">
+              <i class="bi bi-lock me-1"></i>Сбор завершён
+            </div>
+            {% endif %}
+          {% else %}
+          <a href="{% url 'users:login' %}?next={{ request.path }}" class="btn btn-primary w-100">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Войдите, чтобы участвовать
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Organizer -->
+      <div class="card">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Организатор</h6>
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-sm" style="width:48px;height:48px;font-size:1.1rem;">
+              {{ purchase.organizer.first_name|first|upper }}{{ purchase.organizer.last_name|first|upper }}
+            </div>
+            <div>
+              <div class="fw-bold">{{ purchase.organizer.get_full_name|default:purchase.organizer.username }}</div>
+              <div class="small text-muted">
+                <i class="bi bi-star-fill text-warning me-1"></i>{{ purchase.organizer.rating }}
+                · {{ purchase.organizer.total_purchases }} закупок
+              </div>
+            </div>
+          </div>
+          {% if purchase.organizer.bio %}
+          <p class="small text-muted mt-2 mb-0">{{ purchase.organizer.bio }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Active participants preview -->
+      {% if orders %}
+      <div class="card mt-4">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Участники ({{ purchase.participants_count }})</h6>
+          {% for order in orders %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="avatar-sm" style="width:28px;height:28px;font-size:0.7rem;">
+              {{ order.user.first_name|first|upper }}{{ order.user.last_name|first|upper }}
+            </div>
+            <span class="small">{{ order.user.get_full_name|default:order.user.username }}</span>
+            <span class="badge bg-light text-dark ms-auto">{{ order.quantity }} шт.</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

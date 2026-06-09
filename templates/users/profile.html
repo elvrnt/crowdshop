@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Мой профиль{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <h1><i class="bi bi-person me-2"></i>Мой профиль</h1>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <!-- Profile card -->
+    <div class="col-lg-4">
+      <div class="card text-center p-4 mb-4">
+        <div class="mb-3">
+          {% if profile_user.avatar %}
+          <img src="{{ profile_user.avatar.url }}" class="rounded-circle" width="96" height="96" style="object-fit:cover;" alt="Аватар">
+          {% else %}
+          <div class="avatar-sm mx-auto" style="width:96px;height:96px;font-size:2rem;background:var(--cs-primary);">
+            {{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}
+          </div>
+          {% endif %}
+        </div>
+        <h4 class="fw-bold mb-1">{{ profile_user.get_full_name|default:profile_user.username }}</h4>
+        <div class="text-muted small mb-3">@{{ profile_user.username }}</div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <div class="fw-bold" style="color:var(--cs-primary);font-size:1.3rem;">{{ profile_user.rating }}</div>
+            <div class="text-muted" style="font-size:0.75rem;">Рейтинг</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold" style="color:var(--cs-primary);font-size:1.3rem;">{{ profile_user.total_purchases }}</div>
+            <div class="text-muted" style="font-size:0.75rem;">Закупок</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold" style="color:var(--cs-primary);font-size:1.3rem;">{{ my_orders|length }}</div>
+            <div class="text-muted" style="font-size:0.75rem;">Заявок</div>
+          </div>
+        </div>
+
+        {% if profile_user.bio %}
+        <p class="text-muted small">{{ profile_user.bio }}</p>
+        {% endif %}
+
+        {% if profile_user.phone %}
+        <div class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ profile_user.phone }}</div>
+        {% endif %}
+        <div class="text-muted small"><i class="bi bi-envelope me-1"></i>{{ profile_user.email }}</div>
+        <div class="text-muted small mt-1"><i class="bi bi-calendar me-1"></i>На сайте с {{ profile_user.date_joined|date:"d.m.Y" }}</div>
+
+        <a href="{% url 'users:profile_edit' %}" class="btn btn-outline-primary mt-4 w-100">
+          <i class="bi bi-pencil me-1"></i>Редактировать профиль
+        </a>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="col-lg-8">
+      <!-- My purchases -->
+      <div class="card mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-person-badge me-2"></i>Мои закупки</h5>
+            <a href="{% url 'purchases:my' %}" class="btn btn-outline-primary btn-sm">Все</a>
+          </div>
+
+          {% if my_purchases %}
+          <div class="list-group list-group-flush">
+            {% for purchase in my_purchases %}
+            <a href="{% url 'purchases:detail' purchase.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0 py-3">
+              <div>
+                <div class="fw-semibold">{{ purchase.title|truncatechars:50 }}</div>
+                <div class="text-muted small">
+                  {{ purchase.participants_count }} уч. · {{ purchase.created_at|date:"d.m.Y" }}
+                </div>
+              </div>
+              <span class="badge bg-{{ purchase.status_color }}-subtle text-{{ purchase.status_color }} ms-2">
+                {{ purchase.status_label }}
+              </span>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">Вы ещё не создавали закупок.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- My orders -->
+      <div class="card">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-bag me-2"></i>Мои заявки</h5>
+            <a href="{% url 'purchases:my' %}" class="btn btn-outline-primary btn-sm">Все</a>
+          </div>
+
+          {% if my_orders %}
+          <div class="list-group list-group-flush">
+            {% for order in my_orders %}
+            <a href="{% url 'purchases:detail' order.purchase.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0 py-3">
+              <div>
+                <div class="fw-semibold">{{ order.purchase.title|truncatechars:45 }}</div>
+                <div class="text-muted small">
+                  {{ order.quantity }} шт. · {{ order.total_price|floatformat:0 }} ₽ · {{ order.created_at|date:"d.m.Y" }}
+                </div>
+              </div>
+              <span class="badge bg-{{ order.status_color }}-subtle text-{{ order.status_color }} ms-2">
+                {{ order.status_label }}
+              </span>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">Вы ещё не участвовали в закупках.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

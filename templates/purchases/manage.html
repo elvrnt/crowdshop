@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление: {{ purchase.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb mb-0" style="opacity:0.8;font-size:0.85rem;">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-white-50">Главная</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'purchases:detail' purchase.pk %}" class="text-white-50">{{ purchase.title|truncatechars:30 }}</a></li>
+        <li class="breadcrumb-item active text-white">Управление</li>
+      </ol>
+    </nav>
+    <h1><i class="bi bi-gear me-2"></i>Управление закупкой</h1>
+    <p class="mb-0 opacity-75">{{ purchase.title }}</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <!-- Stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="brand-font fw-bold" style="font-size:2rem;color:var(--cs-primary);">{{ orders|length }}</div>
+        <div class="text-muted small">Всего заявок</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="brand-font fw-bold" style="font-size:2rem;color:#10b981;">{{ purchase.participants_count }}</div>
+        <div class="text-muted small">Подтверждённых</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="brand-font fw-bold" style="font-size:2rem;color:#f59e0b;">{{ total_units }}</div>
+        <div class="text-muted small">Единиц заказано</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="brand-font fw-bold" style="font-size:2rem;color:#8b5cf6;">
+          {% widthratio total_units 1 purchase.price_with_fee as gross %}
+          {{ purchase.price_with_fee|floatformat:0 }}₽
+        </div>
+        <div class="text-muted small">Цена (с комиссией)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Orders table -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-4"><i class="bi bi-list-check me-2"></i>Заявки участников</h5>
+
+          {% if orders %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Участник</th>
+                  <th class="text-center">Кол-во</th>
+                  <th class="text-center">Сумма</th>
+                  <th>Комментарий</th>
+                  <th>Статус</th>
+                  <th>Действие</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order in orders %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="avatar-sm" style="width:32px;height:32px;font-size:0.75rem;flex-shrink:0;">
+                        {{ order.user.first_name|first|upper }}{{ order.user.last_name|first|upper }}
+                      </div>
+                      <div>
+                        <div class="fw-semibold small">{{ order.user.get_full_name|default:order.user.username }}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ order.created_at|date:"d.m.Y" }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center fw-bold">{{ order.quantity }}</td>
+                  <td class="text-center">
+                    <span class="fw-semibold" style="color:var(--cs-primary);">{{ order.total_price|floatformat:0 }} ₽</span>
+                  </td>
+                  <td>
+                    {% if order.comment %}
+                    <span class="text-muted small" title="{{ order.comment }}">
+                      {{ order.comment|truncatechars:30 }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted small">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-{{ order.status_color }}-subtle text-{{ order.status_color }}">
+                      {{ order.status_label }}
+                    </span>
+                  </td>
+                  <td>
+                    <form method="post" action="{% url 'purchases:order_status' order.pk %}" class="d-flex gap-1">
+                      {% csrf_token %}
+                      <select name="status" class="form-select form-select-sm" style="min-width:140px;">
+                        {% for val, label in order_status_choices %}
+                        <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-check"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <div style="font-size:3rem;opacity:0.25;">📋</div>
+            <p class="text-muted mt-2">Заявок пока нет</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar: status management -->
+    <div class="col-lg-4">
+      <!-- Purchase status -->
+      <div class="card mb-4">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-arrow-repeat me-2"></i>Статус закупки</h6>
+          <div class="mb-3">
+            <span class="status-pill bg-{{ purchase.status_color }}-subtle text-{{ purchase.status_color }} fs-6">
+              {{ purchase.status_label }}
+            </span>
+          </div>
+          <form method="post" action="{% url 'purchases:update_status' purchase.pk %}">
+            {% csrf_token %}
+            <select name="status" class="form-select mb-3">
+              {% for val, label in status_choices %}
+              <option value="{{ val }}" {% if purchase.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-check-circle me-1"></i>Обновить статус
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="card mb-4">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-lightning me-2"></i>Быстрые действия</h6>
+          <div class="d-grid gap-2">
+            <a href="{% url 'purchases:detail' purchase.pk %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-eye me-1"></i>Просмотр закупки
+            </a>
+            <a href="{% url 'purchases:edit' purchase.pk %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-pencil me-1"></i>Редактировать
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Purchase info summary -->
+      <div class="card">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Информация</h6>
+          <dl class="mb-0" style="font-size:0.85rem;">
+            <dt class="text-muted fw-normal">Цена за шт.</dt>
+            <dd class="fw-bold">{{ purchase.price_per_unit }} ₽</dd>
+            <dt class="text-muted fw-normal">Комиссия орг.</dt>
+            <dd class="fw-bold">{{ purchase.organizer_fee }}%</dd>
+            <dt class="text-muted fw-normal">Сбор до</dt>
+            <dd class="fw-bold">{{ purchase.stop_date|date:"d.m.Y H:i" }}</dd>
+            {% if purchase.delivery_date %}
+            <dt class="text-muted fw-normal">Доставка</dt>
+            <dd class="fw-bold">{{ purchase.delivery_date|date:"d.m.Y" }}</dd>
+            {% endif %}
+            {% if purchase.delivery_address %}
+            <dt class="text-muted fw-normal">Адрес выдачи</dt>
+            <dd class="fw-bold">{{ purchase.delivery_address }}</dd>
+            {% endif %}
+            <dt class="text-muted fw-normal">Создана</dt>
+            <dd class="fw-bold mb-0">{{ purchase.created_at|date:"d.m.Y" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
