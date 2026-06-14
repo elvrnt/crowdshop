@@ -1,8 +1,9 @@
 # gunicorn.conf.py
 import multiprocessing
+import os
 
-# Сокет / адрес
-bind = "0.0.0.0:8000"
+# Сокет / адрес (Railway передаёт PORT, локально — 8000)
+bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
 
 # Количество воркеров: 2 * CPU + 1 — стандартная рекомендация
 workers = multiprocessing.cpu_count() * 2 + 1

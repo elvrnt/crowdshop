@@ -3,14 +3,12 @@ set -e
 
 echo "⏳ Ожидание PostgreSQL..."
 until python -c "
-import psycopg2, os
-psycopg2.connect(
-    dbname=os.environ['DB_NAME'],
-    user=os.environ['DB_USER'],
-    password=os.environ['DB_PASSWORD'],
-    host=os.environ['DB_HOST'],
-    port=os.environ.get('DB_PORT', '5432'),
-)
+import os
+import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crowdshop.settings')
+django.setup()
+from django.db import connection
+connection.ensure_connection()
 " 2>/dev/null; do
   sleep 1
 done

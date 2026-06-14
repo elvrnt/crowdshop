@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-12345')
@@ -67,11 +69,22 @@ if _database_url:
     DATABASES = {'default': dj_database_url.parse(_database_url, conn_max_age=600)}
 else:
     # Собираем из отдельных переменных — Railway или Docker Compose
-    _host = (
-        os.environ.get('PGHOST') or
-        os.environ.get('DB_HOST') or
-        'db'
-    )
+    _db_host = os.environ.get('DB_HOST')
+    if _db_host == 'db' and os.environ.get('RAILWAY_ENVIRONMENT'):
+        # DB_HOST=db — дефолт Docker Compose, на Railway не работает
+        _db_host = None
+
+    _host = os.environ.get('PGHOST') or _db_host
+    if not _host:
+        _host = 'db' if not os.environ.get('RAILWAY_ENVIRONMENT') else None
+
+    if not _host:
+        raise ImproperlyConfigured(
+            'На Railway нужна переменная DATABASE_URL. '
+            'Добавьте PostgreSQL в проект и привяжите его к сервису '
+            '(Variables → Add Reference → DATABASE_URL). '
+            'Удалите DB_HOST=db из переменных окружения.'
+        )
     _port = (
         os.environ.get('PGPORT') or
         os.environ.get('DB_PORT') or
