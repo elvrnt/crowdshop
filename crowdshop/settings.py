@@ -1,6 +1,6 @@
 import os
+import dj_database_url
 from pathlib import Path
-from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -59,19 +59,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'crowdshop.wsgi.application'
 
 # ── База данных ────────────────────────────────────────────────────────────
-# Railway передаёт PGDATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT.
-# Docker Compose передаёт DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT.
-# os.environ.get с fallback покрывает оба случая без исключений.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME':     os.environ.get('PGDATABASE') or os.environ.get('DB_NAME', 'crowdshop'),
-        'USER':     os.environ.get('PGUSER')     or os.environ.get('DB_USER', 'crowdshop_user'),
-        'PASSWORD': os.environ.get('PGPASSWORD') or os.environ.get('DB_PASSWORD', 'crowdshop_pass'),
-        'HOST':     os.environ.get('PGHOST')     or os.environ.get('DB_HOST', 'db'),
-        'PORT':     os.environ.get('PGPORT')     or os.environ.get('DB_PORT', '5432'),
+# Приоритет 1: DATABASE_URL (Railway передаёт автоматически)
+# Приоритет 2: DB_* переменные из .env (Docker Compose)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Railway / любой PaaS с DATABASE_URL
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    # Локальный Docker Compose
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     os.environ.get('DB_NAME', 'crowdshop'),
+            'USER':     os.environ.get('DB_USER', 'crowdshop_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'crowdshop_pass'),
+            'HOST':     os.environ.get('DB_HOST', 'db'),
+            'PORT':     os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
