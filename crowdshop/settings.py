@@ -1,16 +1,14 @@
 import os
-import dj_database_url
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-in-production-12345')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-12345')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['*']  # Railway домен добавится автоматически
+
 RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
-if RAILWAY_DOMAIN and RAILWAY_DOMAIN not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -59,25 +57,50 @@ TEMPLATES = [
 WSGI_APPLICATION = 'crowdshop.wsgi.application'
 
 # ── База данных ────────────────────────────────────────────────────────────
-# Приоритет 1: DATABASE_URL (Railway передаёт автоматически)
-# Приоритет 2: DB_* переменные из .env (Docker Compose)
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Пробуем DATABASE_URL (Railway), потом отдельные PG* (Railway альтернатива),
+# потом DB_* (Docker Compose .env).
 
-if DATABASE_URL:
-    # Railway / любой PaaS с DATABASE_URL
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    }
+_database_url = os.environ.get('DATABASE_URL', '')
+
+if _database_url:
+    import dj_database_url
+    DATABASES = {'default': dj_database_url.parse(_database_url, conn_max_age=600)}
 else:
-    # Локальный Docker Compose
+    # Собираем из отдельных переменных — Railway или Docker Compose
+    _host = (
+        os.environ.get('PGHOST') or
+        os.environ.get('DB_HOST') or
+        'db'
+    )
+    _port = (
+        os.environ.get('PGPORT') or
+        os.environ.get('DB_PORT') or
+        '5432'
+    )
+    _name = (
+        os.environ.get('PGDATABASE') or
+        os.environ.get('DB_NAME') or
+        'crowdshop'
+    )
+    _user = (
+        os.environ.get('PGUSER') or
+        os.environ.get('DB_USER') or
+        'crowdshop_user'
+    )
+    _password = (
+        os.environ.get('PGPASSWORD') or
+        os.environ.get('DB_PASSWORD') or
+        'crowdshop_pass'
+    )
+
     DATABASES = {
         'default': {
             'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     os.environ.get('DB_NAME', 'crowdshop'),
-            'USER':     os.environ.get('DB_USER', 'crowdshop_user'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'crowdshop_pass'),
-            'HOST':     os.environ.get('DB_HOST', 'db'),
-            'PORT':     os.environ.get('DB_PORT', '5432'),
+            'NAME':     _name,
+            'USER':     _user,
+            'PASSWORD': _password,
+            'HOST':     _host,
+            'PORT':     _port,
         }
     }
 
@@ -123,6 +146,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-CSRF_TRUSTED_ORIGINS = []
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']
 if RAILWAY_DOMAIN:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RAILWAY_DOMAIN}')
