@@ -4,13 +4,12 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
-DEBUG = config('DEBUG', default=False, cast=bool)
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-in-production-12345')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Railway даёт домен через RAILWAY_PUBLIC_DOMAIN, добавляем его автоматически
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
-if RAILWAY_DOMAIN:
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+RAILWAY_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
+if RAILWAY_DOMAIN and RAILWAY_DOMAIN not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
 
 INSTALLED_APPS = [
@@ -60,32 +59,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'crowdshop.wsgi.application'
 
 # ── База данных ────────────────────────────────────────────────────────────
-# Railway передаёт PG* переменные автоматически при подключении PostgreSQL.
-# Локально используем DB_* переменные из .env для Docker Compose.
-if os.environ.get('PGDATABASE'):
-    # Railway-окружение
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME':     os.environ['PGDATABASE'],
-            'USER':     os.environ['PGUSER'],
-            'PASSWORD': os.environ['PGPASSWORD'],
-            'HOST':     os.environ['PGHOST'],
-            'PORT':     os.environ.get('PGPORT', '5432'),
-        }
+# Railway передаёт PGDATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT.
+# Docker Compose передаёт DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT.
+# os.environ.get с fallback покрывает оба случая без исключений.
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':     os.environ.get('PGDATABASE') or os.environ.get('DB_NAME', 'crowdshop'),
+        'USER':     os.environ.get('PGUSER')     or os.environ.get('DB_USER', 'crowdshop_user'),
+        'PASSWORD': os.environ.get('PGPASSWORD') or os.environ.get('DB_PASSWORD', 'crowdshop_pass'),
+        'HOST':     os.environ.get('PGHOST')     or os.environ.get('DB_HOST', 'db'),
+        'PORT':     os.environ.get('PGPORT')     or os.environ.get('DB_PORT', '5432'),
     }
-else:
-    # Локальное Docker Compose окружение
-    DATABASES = {
-        'default': {
-            'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     config('DB_NAME'),
-            'USER':     config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST':     config('DB_HOST', default='db'),
-            'PORT':     config('DB_PORT', default='5432'),
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -129,7 +115,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-# CSRF — добавляем Railway-домен в доверенные источники
 CSRF_TRUSTED_ORIGINS = []
 if RAILWAY_DOMAIN:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RAILWAY_DOMAIN}')
