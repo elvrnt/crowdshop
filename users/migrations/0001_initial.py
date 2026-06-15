@@ -1,3 +1,4 @@
+import decimal
 import django.contrib.auth.models
 import django.contrib.auth.validators
 import django.utils.timezone
@@ -37,7 +38,7 @@ class Migration(migrations.Migration):
                 ('phone', models.CharField(blank=True, max_length=20, verbose_name='Телефон')),
                 ('avatar', models.ImageField(blank=True, null=True, upload_to='avatars/', verbose_name='Аватар')),
                 ('bio', models.TextField(blank=True, max_length=500, verbose_name='О себе')),
-                ('rating', models.DecimalField(decimal_places=2, default=5.0, max_digits=3, verbose_name='Рейтинг')),
+                ('rating', models.DecimalField(decimal_places=2, default=decimal.Decimal('5.00'), max_digits=3, verbose_name='Рейтинг')),
                 ('total_purchases', models.PositiveIntegerField(default=0, verbose_name='Всего закупок')),
                 ('groups', models.ManyToManyField(
                     blank=True,

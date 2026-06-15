@@ -1,2 +1,11 @@
 [phases.setup]
 nixPkgs = ["python311", "postgresql"]
+
+[phases.build]
+cmds = [
+  "pip install -r requirements.txt",
+  "chmod +x entrypoint.sh"
+]
+
+[start]
+cmd = "./entrypoint.sh"
