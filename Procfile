@@ -1,1 +1,1 @@
-web: python manage.py migrate --noinput && python -c "print('MIGRATE OK')" && gunicorn crowdshop.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+web: gunicorn crowdshop.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --log-level debug
