@@ -42,6 +42,12 @@ class PurchaseForm(forms.ModelForm):
                 if hasattr(field.widget, 'attrs'):
                     field.widget.attrs['class'] = 'form-control'
 
+        if self.instance and self.instance.pk:
+            if self.instance.stop_date:
+                self.initial['stop_date'] = self.instance.stop_date.strftime('%Y-%m-%dT%H:%M')
+            if self.instance.delivery_date:
+                self.initial['delivery_date'] = self.instance.delivery_date.strftime('%Y-%m-%dT%H:%M')
+
 
 class OrderForm(forms.ModelForm):
     class Meta:
