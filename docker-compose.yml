@@ -21,6 +21,10 @@ services:
     container_name: crowdshop_web
     restart: unless-stopped
     env_file: .env
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn crowdshop.wsgi:application --config gunicorn.conf.py"
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
